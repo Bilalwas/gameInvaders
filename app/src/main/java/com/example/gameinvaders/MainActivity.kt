@@ -17,26 +17,23 @@ class MainActivity : AppCompatActivity() {
 
         val launchRocketButton = findViewById<Button>(R.id.launch_rocket_button)
         launchRocketButton.setOnClickListener {
-            gameView.game.launchRocket()
-            val pauseButton: Button = findViewById(R.id.pauseButton)
-            pauseButton.setOnClickListener {
-                if (isGamePaused) {
-                    resumeGame()
-                    pauseButton.text = "Pause"
-                } else {
-                    pauseGame()
-                    pauseButton.text = "Resume"
-                }
-                isGamePaused = !isGamePaused
+            gameView.launchRocket() }
+        val pauseButton: Button = findViewById(R.id.pauseButton)
+        pauseButton.setOnClickListener {
+            if (isGamePaused) {
+                gameView.resumeGame()
+                pauseButton.text = "Pause"
             }
-        }
-    }
-    private fun pauseGame() {
-        // Logique pour mettre le jeu en pause
-    }
+            else {
+                gameView.pauseGame()
+                pauseButton.text = "Resume"
+            }
+            isGamePaused = !isGamePaused
+            }
 
-    private fun resumeGame() {
-        // Logique pour reprendre le jeu
-    }
+        }
+
+
 }
+
 

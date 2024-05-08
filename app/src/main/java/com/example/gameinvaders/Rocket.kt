@@ -11,5 +11,8 @@ class Rocket(val bitmap: Bitmap, var x: Float, var y: Float) {
     }
     fun update() {
         y -= speed
+        if (y < 0) { // Si la roquette sort de l'écran, elle devient invisible
+            isVisible = false
+        }
     }
 }
