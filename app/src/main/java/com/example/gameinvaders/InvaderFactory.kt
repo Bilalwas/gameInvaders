@@ -1,12 +1,8 @@
 package com.example.gameinvaders
 import android.content.Context
-import android.graphics.Bitmap
-import android.util.Log
-
 enum class InvaderType {
     ROCKET, SPEEDY, TANKY
 }
-
 object InvaderFactory {
     fun createInvader(
         type: InvaderType,
