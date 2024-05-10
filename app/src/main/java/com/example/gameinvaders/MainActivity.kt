@@ -17,7 +17,7 @@ class MainActivity : AppCompatActivity() {
 
         val launchRocketButton = findViewById<Button>(R.id.launch_rocket_button)
         launchRocketButton.setOnClickListener {
-            gameView.spaceship.launchRocket(gameView.rocketBitmap) }
+            gameView.spaceship.launchRocket(gameView.spaceshiprocketBitmap) }
         val pauseButton: Button = findViewById(R.id.pauseButton)
         pauseButton.setOnClickListener {
             if (isGamePaused) {

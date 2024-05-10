@@ -2,7 +2,6 @@ package com.example.gameinvaders
 
 import android.content.Context
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.graphics.RectF
 
 class Invaders(
@@ -11,14 +10,14 @@ class Invaders(
     val screenHeight: Int,
     val invaderBitmap: Bitmap,
     val rockets: MutableList<InvaderRocket>,
-    var scorePerInvader: Int = 500,
-    val numRows: Int = 5,
-    val numCols: Int = 6
 ) {
     val invadersList = mutableListOf<Invader>()
     private var invaderType = 0
     private var direction = 1
     private var invaderSpeed = 1f
+    var scorePerInvader: Int = 500
+    val numRows: Int = 5
+    val numCols: Int = 6
 
     init {
         createInvaderTroop()
@@ -46,7 +45,7 @@ class Invaders(
         }
     }
 
-    fun updateInvaders(screenWidth: Int, rocketBitmap:Bitmap) {
+    fun updateInvaders(screenWidth: Int, invaderrocketBitmap:Bitmap) {
         var edgeReached = false
 
         invadersList.forEach { invader ->
@@ -57,7 +56,7 @@ class Invaders(
                 edgeReached = true
             }
             if (invader is RocketInvader) {
-                invader.attemptToShoot(rocketBitmap) // Appeler une méthode qui décide quand tirer
+                invader.attemptToShoot(invaderrocketBitmap) // Appeler une méthode qui décide quand tirer
             }
         }
 
@@ -71,21 +70,15 @@ class Invaders(
             }
         }
     }
-
-    fun attemptToShoot(rocketBitmap: Bitmap) {
-        invadersList.forEach { invader ->
-            if (invader.isVisible) {
-                val newRocket = InvaderRocket(rocketBitmap, invader.x + invader.invadersBitmap.width / 2 - rocketBitmap.width / 2, invader.y + invader.invadersBitmap.height)
-                rockets.add(newRocket)
-            }
-        }
+    fun resetInvaders() {
+        invadersList.clear()
+        createInvaderTroop()
     }
-
     fun removeDestroyedInvaders() {
         invadersList.removeIf { !it.isVisible }
     }
 
-    fun checkCollisions(spaceshipRockets: MutableList<SpaceshipRocket>) {
+    fun checkCollisions(spaceshipRockets: MutableList<SpaceshipRocket>,score: Observable<Int> ) {
         invadersList.forEach { invader ->
             if (invader.isVisible) {
                 val invaderRect = invader.getCollisionRect()
@@ -94,9 +87,16 @@ class Invaders(
                     if (RectF.intersects(invaderRect, rocketRect) && rocket.isVisible) {
                         invader.takeDamage(1)
                         rocket.isVisible = false
+                        if (!invader.isVisible) {
+                            score.set(score.get() + 500)
+                        }
+                        rocket.isVisible = false
                     }
                 }
             }
         }
+    }
+    fun allInvadersDestroyed(): Boolean {
+        return invadersList.all { !it.isVisible }
     }
 }

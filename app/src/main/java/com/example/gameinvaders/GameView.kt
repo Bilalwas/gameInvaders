@@ -9,7 +9,6 @@ import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
-import android.graphics.RectF
 import android.graphics.Typeface
 import android.os.Handler
 import android.os.Looper
@@ -25,14 +24,12 @@ class GameView(context: Context, attrs: AttributeSet? = null) : View(context, at
     private val handler = Handler(Looper.getMainLooper())
     private var backgroundBitmap: Bitmap = BitmapFactory.decodeResource(resources, R.drawable.fond)
     var isGamePaused = false
-    private var lastShotTime: Long = System.currentTimeMillis()
-    private val shootingInterval = 10 * 1000  // 100 seconds
-    private val random = Random()
-    private var lastSpawnTime = System.currentTimeMillis()
     val spaceshipBitmap: Bitmap = BitmapFactory.decodeResource(context.resources, R.mipmap.spaceship_image_background)
-    var invadersBitmap: Bitmap = BitmapFactory.decodeResource(context.resources, R.mipmap.invader_image_background)
-    val rocketBitmap: Bitmap = BitmapFactory.decodeResource(context.resources, R.mipmap.rocket_image_background)
+    val spaceshiprocketBitmap: Bitmap = BitmapFactory.decodeResource(context.resources, R.mipmap.spaceship_rocket_image_background)
+    val invaderrocketBitmap: Bitmap = BitmapFactory.decodeResource(context.resources, R.mipmap.invader_rocket_image_background)
     val invaderBitmap: Bitmap = BitmapFactory.decodeResource(context.resources, R.mipmap.invader_image_background)
+    val healthBonusBitmap: Bitmap = BitmapFactory.decodeResource(context.resources, R.mipmap.health_bonus_image_background)
+    val damageBonusBitmap: Bitmap = BitmapFactory.decodeResource(context.resources, R.mipmap.damage_bonus_image_background)
 
 
 
@@ -42,13 +39,13 @@ class GameView(context: Context, attrs: AttributeSet? = null) : View(context, at
     private lateinit var invaderTanky: TankyInvader
     private lateinit var rocket: Rocket
     lateinit var spaceship: Spaceship
-    // Liste pour stocker les roquettes
+    val score = Observable(0)
     var Irockets = mutableListOf<InvaderRocket>()
     var Srockets = mutableListOf<SpaceshipRocket>()
-    var invaderType = 0
-    var score = 0
+    private val bonuses = mutableListOf<Bonus>()
     val invaders = Invaders(context, width, height, invaderBitmap, Irockets)
     private var isGameOver = false
+
 
     val runnable = object : Runnable {
         override fun run() {
@@ -64,23 +61,37 @@ class GameView(context: Context, attrs: AttributeSet? = null) : View(context, at
             }
         }
     }
+    private val bonusRunnable = object : Runnable {
+        override fun run() {
+            if (!isGamePaused && !isGameOver) {
+                createBonus() // Créer un bonus
+                handler.postDelayed(this, 10000) // Générer un nouveau bonus toutes les 10 secondes
+            }
+        }
+    }
     init {
         resetGame()
         handler.post(runnable)
+        handler.post(bonusRunnable)
     }
     fun update() {
         Srockets.forEach { it.update() }
         Irockets.forEach { it.update() }
         Srockets.removeIf { !it.isVisible }
         Irockets.removeIf { !it.isVisible }
-        spaceship.checkCollisions()
-        if (!isGameOver && spaceship.health <= 0) {
+        bonuses.forEach { it.update() }
+        bonuses.removeIf { !it.isVisible }
+        spaceship.checkCollisions(bonuses)
+        if (!isGameOver && spaceship.health.get() <= 0) {
             isGameOver = true
             endGame()
         }
-        invaders.checkCollisions(Srockets)
-        invaders.updateInvaders(this.width, rocketBitmap)
+        invaders.checkCollisions(Srockets, score)
+        invaders.updateInvaders(this.width, invaderrocketBitmap)
         invaders.removeDestroyedInvaders()
+        if (invaders.allInvadersDestroyed()) {
+            invaders.resetInvaders()
+        }
         this.invalidate()
     }
     override fun onSizeChanged(newWidth: Int, newHeight: Int, oldWidth: Int, oldHeight: Int) {
@@ -91,6 +102,18 @@ class GameView(context: Context, attrs: AttributeSet? = null) : View(context, at
             val resizedBitmap = Bitmap.createScaledBitmap(it, newWidth, newHeight, false)
             backgroundBitmap = resizedBitmap
         }
+    }
+    private fun createBonus() {
+        val random = Random()
+        val x = random.nextInt(this.width)
+        val bonusType = random.nextInt(2)
+
+        val newBonus = when (bonusType) {
+            0 -> HealthBonus(healthBonusBitmap, x.toFloat(), 0f)
+            else -> DamageBonus(damageBonusBitmap, x.toFloat(), 0f)
+        }
+
+        bonuses.add(newBonus)
     }
 
     fun pauseGame() {
@@ -109,17 +132,17 @@ class GameView(context: Context, attrs: AttributeSet? = null) : View(context, at
         backgroundBitmap?.let {
             canvas.drawBitmap(it, 0f, 0f, null)
         }
-        spaceship.bitmap?.let { spaceshipBitmap ->
+        spaceship.bitmap?.let { paceshipBitmap ->
             canvas.drawBitmap(spaceshipBitmap, spaceship.x, spaceship.y, null)
         }
         for (rocket in Irockets) {
-            rocket.bitmap?.let { rocketBitmap ->
-                canvas.drawBitmap(rocketBitmap, rocket.x, rocket.y, null)
+            rocket.bitmap?.let { nvaderrocketBitmap ->
+                canvas.drawBitmap(invaderrocketBitmap, rocket.x, rocket.y, null)
             }
         }
         for (rocket in Srockets) {
-            rocket.bitmap?.let { rocketBitmap ->
-                canvas.drawBitmap(rocketBitmap, rocket.x, rocket.y, null)
+            rocket.bitmap?.let { paceshiprocketBitmap ->
+                canvas.drawBitmap(spaceshiprocketBitmap, rocket.x, rocket.y, null)
             }
         }
         invaders.invadersList.forEach { invader ->
@@ -127,36 +150,38 @@ class GameView(context: Context, attrs: AttributeSet? = null) : View(context, at
                 canvas.drawBitmap(invader.invadersBitmap, invader.x, invader.y, null)
             }
         }
+        bonuses.forEach { bonus ->
+            if (bonus is HealthBonus) {
+                bonus.bitmap.let { bonusBitmap ->
+                    canvas.drawBitmap(healthBonusBitmap, bonus.x, bonus.y, null)
+                }
+            } else {
+                bonus.bitmap.let { bonusBitmap ->
+                    canvas.drawBitmap(damageBonusBitmap, bonus.x, bonus.y, null)
+                }
+            }
+        }
         val scorePaint = Paint().apply {
             color = Color.BLUE
             textSize = 60f
             typeface = Typeface.DEFAULT_BOLD
         }
-        canvas.drawText("Score: ${score}", 50f, 100f, scorePaint)
+        canvas.drawText("Score: ${score.get()}", 50f, 100f, scorePaint)
     }
         @SuppressLint("ClickableViewAccessibility")
     override fun onTouchEvent(event: MotionEvent): Boolean {
         val activeZoneHeight = height * 0.75f
         when (event.action) {
             MotionEvent.ACTION_DOWN, MotionEvent.ACTION_MOVE -> {
-            // Vérifiez si le toucher est dans la zone active.
                 if (event.y > activeZoneHeight) {
                     moveDirection = if (event.x < spaceship.x) -1f else 1f
                 }
             }
             MotionEvent.ACTION_UP -> {
                 moveDirection = 0f
-
             }
         }
         return true
-    }
-    companion object {
-        const val NUM_ROWS = 5 // Lignes d'invaders
-        const val NUM_COLS = 6 // Colonnes d'invaders
-        const val spacing: Float = 1f // Espacement entre chaque invader
-        const val SPAWN_DELAY = 15000L // 5000 ms = 5 secondes
-        const val SCORE_PER_INVADER = 500
     }
     private fun endGame() {
         val intent = Intent(context, GameOverActivity::class.java)

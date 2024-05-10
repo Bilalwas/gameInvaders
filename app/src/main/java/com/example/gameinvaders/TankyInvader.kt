@@ -5,7 +5,7 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 
 class TankyInvader(context: Context, screenX: Int, screenY: Int) : Invader(context, screenX, screenY) {
-    override var health: Int = 1   // Plus de santé
+    override var health: Int = 7   // Plus de santé
     override var invadersBitmap: Bitmap = BitmapFactory.decodeResource(context.resources, R.mipmap.tanky_invader_image_background)
 
 

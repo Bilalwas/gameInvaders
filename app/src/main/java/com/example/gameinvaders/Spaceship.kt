@@ -6,11 +6,15 @@ import android.view.MotionEvent
 
 
 // Spaceship.kt
-class Spaceship(val bitmap: Bitmap, var x: Float, var y: Float,private val rockets: MutableList<SpaceshipRocket>,private val invaders :  Invaders, var score : Int) {
+class Spaceship(val bitmap: Bitmap, override var x: Float, override var y: Float,private val rockets: MutableList<SpaceshipRocket>,private val invaders :  Invaders, var score : Observable<Int>): GameEntity {
     val speed = 20f // Vitesse de déplacement du vaisseau
-    var health: Int = 3 // Points de vie du vaisseau
+    var health = Observable(3)// Points de vie du vaisseau
+    var rocketDamage = 1
     fun getCollisionRect(): RectF {
         return RectF(x, y, x + bitmap.width, y + bitmap.height)
+    }
+    override fun update() {
+        // Vous pouvez ajouter la logique d'update du spaceship ici si nécessaire
     }
     fun moveLeft() {
         x += speed
@@ -23,17 +27,14 @@ class Spaceship(val bitmap: Bitmap, var x: Float, var y: Float,private val rocke
     }
 
     fun takeDamage(damage: Int) {
-        health -= damage
-        if (health <= 0) {
-            // Gérer le cas où le vaisseau est détruit
-        }
+        health.set(health.get() - damage)
     }
     fun launchRocket(rocketBitmap: Bitmap) {
         // Crée une nouvelle roquette à la position actuelle du vaisseau
         val newRocket = SpaceshipRocket(rocketBitmap, x , y)
         rockets.add(newRocket)
     }
-    fun checkCollisions() {
+    fun checkCollisions(bonuses: List<Bonus>) {
         val spaceshipRect = getCollisionRect()
 
         // Vérifier les collisions avec chaque invader
@@ -44,7 +45,7 @@ class Spaceship(val bitmap: Bitmap, var x: Float, var y: Float,private val rocke
                     // Collision entre le vaisseau et un invader
                     takeDamage(1)
                     invader.isVisible = false
-                    score += invaders.scorePerInvader
+                    score.set(score.get() + invaders.scorePerInvader)
                 }
             }
         }
@@ -56,6 +57,13 @@ class Spaceship(val bitmap: Bitmap, var x: Float, var y: Float,private val rocke
                 // Collision entre le vaisseau et une roquette d'invader
                 takeDamage(1)
                 rocket.isVisible = false
+            }
+        }
+        bonuses.forEach { bonus ->
+            val bonusRect = bonus.getCollisionRect()
+            if (RectF.intersects(spaceshipRect, bonusRect) && bonus.isVisible) {
+                bonus.applyEffect(this)
+                bonus.isVisible = false
             }
         }
     }
