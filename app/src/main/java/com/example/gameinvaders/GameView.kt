@@ -1,4 +1,5 @@
 package com.example.gameinvaders
+import com.example.gameinvaders.HighScoreManager
 
 // GameView.kt
 import android.annotation.SuppressLint
@@ -65,6 +66,7 @@ class GameView(context: Context, attrs: AttributeSet? = null) : View(context, at
         override fun run() {
             if (!isGamePaused && !isGameOver) {
                 createBonus() // Créer un bonus
+                HighScoreManager.setHighScore(score.get())
                 handler.postDelayed(this, 10000) // Générer un nouveau bonus toutes les 10 secondes
             }
         }
@@ -89,8 +91,8 @@ class GameView(context: Context, attrs: AttributeSet? = null) : View(context, at
         invaders.checkCollisions(Srockets, score)
         invaders.updateInvaders(this.width, invaderrocketBitmap)
         invaders.removeDestroyedInvaders()
-        if (invaders.allInvadersDestroyed()) {
-            invaders.resetInvaders()
+        if (invaders.invadersList.isEmpty() && !isGameOver) {
+            invaders.createInvaders(NUM_ROWS, NUM_COLS, spacing)
         }
         this.invalidate()
     }
@@ -167,6 +169,7 @@ class GameView(context: Context, attrs: AttributeSet? = null) : View(context, at
             typeface = Typeface.DEFAULT_BOLD
         }
         canvas.drawText("Score: ${score.get()}", 50f, 100f, scorePaint)
+        canvas.drawText("High Score: ${HighScoreManager.getHighScore()}", 50f, 170f, scorePaint)
     }
         @SuppressLint("ClickableViewAccessibility")
     override fun onTouchEvent(event: MotionEvent): Boolean {
@@ -187,9 +190,16 @@ class GameView(context: Context, attrs: AttributeSet? = null) : View(context, at
         val intent = Intent(context, GameOverActivity::class.java)
         context.startActivity(intent)
     }
+    companion object {
+        const val NUM_ROWS = 5
+        const val NUM_COLS = 6
+        const val spacing: Float = 1f
+    }
     fun resetGame() {
         // Initialiser le vaisseau au centre bas de l'écran
         spaceship = Spaceship(spaceshipBitmap, this.width / 2f, this.height - 150f, Srockets, invaders, score)
+        invaders.createInvaders(NUM_ROWS, NUM_COLS, spacing)
         invalidate()
     }
+
 }

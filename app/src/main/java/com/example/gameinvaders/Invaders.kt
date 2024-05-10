@@ -19,30 +19,32 @@ class Invaders(
     val numRows: Int = 5
     val numCols: Int = 6
 
-    init {
-        createInvaderTroop()
-    }
 
-    fun createInvaderTroop() {
+    fun createInvaders(numRows: Int, numCols: Int, spacing: Float) {
         for (row in 0 until numRows) {
             for (col in 0 until numCols) {
-                val invader = createInvaderType()
+                val type = when (invaderType % 3) {
+                    0 -> InvaderType.ROCKET
+                    1 -> InvaderType.TANKY
+                    else -> InvaderType.SPEEDY
+                }
+
+                val invader = InvaderFactory.createInvader(
+                    type,
+                    context,
+                    screenWidth,
+                    screenHeight,
+                    rockets
+                )
+
                 invader.apply {
-                    x = col * (invader.invadersBitmap.width / 2 + 1f)
-                    y = row * (invader.invadersBitmap.height / 2 + 1f)
+                    x = col * (invader.invadersBitmap.width / 2 + spacing)
+                    y = row * (invader.invadersBitmap.height / 2 + spacing)
                     invadersList.add(this)
                 }
             }
         }
         invaderType++
-    }
-
-    private fun createInvaderType(): Invader {
-        return when (invaderType % 3) {
-            0 -> RocketInvader(context, screenWidth, screenHeight, rockets)
-            1 -> TankyInvader(context, screenWidth, screenHeight)
-            else -> SpeedyInvader(context, screenWidth, screenHeight)
-        }
     }
 
     fun updateInvaders(screenWidth: Int, invaderrocketBitmap:Bitmap) {
@@ -72,7 +74,6 @@ class Invaders(
     }
     fun resetInvaders() {
         invadersList.clear()
-        createInvaderTroop()
     }
     fun removeDestroyedInvaders() {
         invadersList.removeIf { !it.isVisible }

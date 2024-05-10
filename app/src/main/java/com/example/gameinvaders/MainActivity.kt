@@ -12,7 +12,7 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main) // Utilisez seulement une fois
-
+        HighScoreManager.init(this)
         gameView = findViewById(R.id.game_view)
 
         val launchRocketButton = findViewById<Button>(R.id.launch_rocket_button)
@@ -29,11 +29,9 @@ class MainActivity : AppCompatActivity() {
                 pauseButton.text = "Resume"
             }
             isGamePaused = !isGamePaused
-            }
-
         }
 
-
+    }
 }
 
 
